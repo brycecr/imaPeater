@@ -45,9 +45,14 @@ def eatfiles(dirname, outfile):
                 try:
                     parser = email.parser.Parser()
                     msg = parser.parse(infile, True)
+
+                    # skip things that were prior to 2006
                     year = email.utils.parsedate(msg.get('date'))[0]
                     if year < 2006:
                         continue
+
+                    # include all address fields...maybe too many? Depends
+                    # on how there are used in real life
                     addrFields = []
                     tos = msg.get_all('to',[])
                     fos = msg.get_all('from',[])
@@ -57,11 +62,20 @@ def eatfiles(dirname, outfile):
                     resentfos = msg.get_all('resent-from',[])
                     resentccs = msg.get_all('resent-cc',[])
                     resentbccs = msg.get_all('resent-bcc',[])
+
+                    # generate tuples from header fields
                     newaddrs = email.utils.getaddresses(tos+fos+ccs+bccs+resenttos+resentfos+resentccs+resentbccs)
+
+                    #switch tuple order
                     newaddrs = [(t[1], t[0]) for t in newaddrs]
+
+                    # filter out addresses that are lists, doemail, or already know longer names
                     newaddrs = [addr for addr in newaddrs if not infolosing(addr)]
+
+                    # merge
                     emailNameMap.update(newaddrs)
                 except:
+                    # if there was a non-email file sitting there, try to ekip it and continue
                     print 'Problem parsing', dirpath + filename + '; Skipping file...'
                     continue
     of = open(outfile, 'w')
@@ -73,5 +87,5 @@ if __name__ == "__main__":
         print "I require a directory or file name"
         sys.exit(1)
     print "Eating your email files in directory", sys.argv[1] + "..."
-    eatfiles(sys.argv[1], 'emailList.txt')
+    eatfiles(sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else 'emailList.txt')
     
